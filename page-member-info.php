@@ -339,7 +339,7 @@ if ($user['excellent_id']) {
                                     <td>
                                         <?php
                                         if ($user['hp']['mbr_grd']) {
-                                            echo $user['hp']['mbr_grd'];
+                                            echo $user['hp']['mbr_grd'].'%';
                                         }
                                         ?>
                                     </td>

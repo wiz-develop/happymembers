@@ -32,16 +32,16 @@ $cart_product_list = delete_not_purchase_cart_product();
                     <img src="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/common/buy-step/order-confirm.png">
                 </div>
                 <?php if (!empty($_SESSION['cart_removed_names'])) : ?>
-                    <div class="cart-status-alert fw-bold rounded" style="background: #fff3cd; padding: 15px; margin-bottom: 20px; color: #856404;">
-                        <p class="fw-bold">以下の商品は販売が終了したか、現在ご購入いただけないためカートから削除されました。</p>
-                        <ul class="m-0">
-                            <?php foreach ($_SESSION['cart_removed_names'] as $name) : ?>
-                                <li><?php echo esc_html($name); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                        <?php unset($_SESSION['cart_removed_names']); ?>
-                    </div>
-                <?php endif; ?>
+                <div class="cart-status-alert fw-bold rounded" style="background: #fff3cd; padding: 15px; margin-bottom: 20px; color: #856404;">
+                    <p class="fw-bold">以下の商品は販売が終了したか、現在ご購入いただけないためカートから削除されました。</p>
+                    <ul class="m-0">
+                        <?php foreach ($_SESSION['cart_removed_names'] as $name) : ?>
+                            <li><?php echo esc_html($name); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php unset($_SESSION['cart_removed_names']); ?>
+                </div>
+            <?php endif; ?>
                 <div class="product-list">
                 <!-- 商品一覧を取得 -->
                 <?php

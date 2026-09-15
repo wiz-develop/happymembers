@@ -87,9 +87,9 @@ session_check();?>
                 data: {
                     action : 'update_user',
                 },
-                // dataType:'json',
+                dataType:'json',
             }).done(function(data) {
-                console.log(data);
+                // console.log(data);
                 window.location.href = '<?php echo get_home_url();?>/member-info/edit/completion/?result='+data.code;
             }).fail(function (XMLHttpRequest, textStatus, errorThrown) {
                 console.log("function       : update_user");

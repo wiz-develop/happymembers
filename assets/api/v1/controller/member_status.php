@@ -33,6 +33,7 @@ if (($params['mbr_nm'] ?? "") !== "" || ($params['mbr_knm'] ?? "") !== "") {
         $params['mbr_knm'],
     ];
     $memberAllByName = tryCatch('API_SerchMember_AllByName', $memberAllByNameParams, false);
+    $memberAllByName = null;
 }
 
 // 各対象会員ID
@@ -268,9 +269,11 @@ for ($i = 0; $i < count($targetExcellentIds); $i++) {
 
 // 対象ハッピーIDから会員情報を一括で取得
 $happyMemberDetailIndex = tryCatch('API_GetMemberDetail_M_hp', [array_values($targetHappyIds)], false);
+$happyMemberDetailIndex = null;
 
 // 対象エクセレントIDから会員情報を一括で取得
 $excellentMemberDetailIndex = tryCatch('API_GetMemberDetail_M_ex', [array_values($targetExcellentIds), $brIds], false);
+$excellentMemberDetailIndex = null;
 
 // WP+基幹システムデータを合成
 foreach ($memberDataFromWp as $memberDataFromWpIndex => &$memberDataFromWpValue) {
@@ -316,6 +319,7 @@ foreach ($memberDataFromWp as $memberDataFromWpIndex => &$memberDataFromWpValue)
         // 名前が取得できない場合
         if ($memberDataFromWpValue->mbr_nm === '') {
             $fetchMemberInfo = tryCatch('API_GetMemberDetail_ex', [$memberDataFromWpValue->excellent_id], false);
+            $fetchMemberInfo = null;
             if (isset($fetchMemberInfo)) {
                 $memberDataFromWpValue->mbr_nm = $fetchMemberInfo->mbr_nm;
                 $memberDataFromWpValue->mbr_knm = $fetchMemberInfo->mbr_knm;

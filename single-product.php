@@ -26,11 +26,11 @@ get_header();
 				</div>
 				<div class="product">
 					<div class="product__image">
-						<?//php if ($image) : ?>
-							<img src="<?php echo $cfs->get('image'); ?>">
-						<?//php else : ?>
-							<!-- <img src="/cms/wp-content/themes/happy-members/assets/images/product/no-image.png" alt="no image"> -->
-						<?//php endif; ?>
+						<?php if ($image) : ?>
+							<img src="<?php echo $cfs->get('image'); ?>" alt="<?php the_title(); ?>">
+						<?php else : ?>
+							<img src="/cms/wp-content/themes/happy-members/assets/images/product/no-image.png" alt="no image">
+						<?php endif; ?>
 					</div>
 					<div class="product__detail">
 						<div class="product-category">

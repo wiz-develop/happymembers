@@ -1013,11 +1013,11 @@ function get_product_price($mbr_kd, $code, $cat_product, $regular_price)
 
     // 管理者アカウントであれば一律1000円で商品を表示
     if (current_user_can('manage_options')) {
-        $price = 1000;
-        return number_format($price);
+        return 1000;
     }
 
     //  分類カテゴリを判別
+    $classification = 0;
     if ($cat_product === '健康食品') {
         $classification = 1;
     } elseif ($cat_product === '化粧品') {
@@ -1058,7 +1058,7 @@ function get_product_price($mbr_kd, $code, $cat_product, $regular_price)
 
     // データ取得に成功しなければ
     if ($res->code !== 0) {
-        return $regular_price_num;
+        return '同期エラーが発生しました';
     }
 
     // 管理者アカウントではない 且 データを正常に取得
@@ -1704,8 +1704,8 @@ function send_order_confirmation_mail()
     // $success = wp_mail($wiz_mail, $subject, $user_text, $header); // ウイズ確認用
     $admin_mail = 'weborder@happyfamily.co.jp'; //weborder@happyfamily.co.jp
     if ($_SERVER["HTTP_HOST"] ==='happyfamily-members.3d-showcase.net') {
-        $admin_mail = ['nishioka-tsubasa@wiznet.co.jp', 'yoshioka-yuko@wiznet.co.jp']; // ウイズ確認用
-        // $admin_mail = ['weborder@happyfamily.co.jp', 'nishioka-tsubasa@wiznet.co.jp', 'yoshioka-yuko@wiznet.co.jp']; // ハッピー様確認用
+        // $admin_mail = ['nishioka-tsubasa@wiznet.co.jp', 'shizukuishi-yuko@wiznet.co.jp']; // ウイズ確認用
+        $admin_mail = ['weborder@happyfamily.co.jp', 'nishioka-tsubasa@wiznet.co.jp', 'shizukuishi-yuko@wiznet.co.jp']; // ハッピー様確認用
     }
 
     $admin_headers = 'From: WEB会員サイト  <weborder@happyfamily.co.jp>' . "\r\n";
@@ -1947,7 +1947,7 @@ function fetch_order_products($order_id)
                 $product['slug'] = $term->slug;
             }
         }
-       if (is_array($transaction_check) && count($transaction_check) >= 2) {
+        if (is_array($transaction_check) && count($transaction_check) >= 2) {
             $transaction = '共通';
         }
 
@@ -2717,6 +2717,20 @@ function get_member_info($wp_user = null)
             $user['delivery_address'] =  "〒". $zip_re_lead . "-" . $zip_re_behind."<br>".$user['address_1']."<br>".$user['address_2'];
         }
     }
+
+    // 別送住所 テスト用データ
+    // $res_hp->syodlv = 1; //別送住所をデフォルトの送り先にする
+    // $user['hp']['re_pcd'] = '〒550-0001';
+    // $user['hp']['re_add1'] = '大阪市西区土佐堀';
+    // $user['hp']['re_add2'] = '1-4-8　日栄ビル6階';
+    // $user['hp']['re_tel'] = '06-6225-0800';
+    // $user['hp']['re_mob'] = '22-2222-2222';
+
+    // 肩書きの有無 テスト用データ
+    // $user['hp']['mbr_kata'] = '社長'; //肩書
+    // $user['hp']['co_nm'] = '株式会社ウイズ'; //会社名
+    // $user['mbr_kata'] = '社長'; //肩書
+    // $user['co_nm'] = '株式会社ウイズ'; //会社名
 
     session_check();
     $_SESSION['user']['id'] = $user['id'];

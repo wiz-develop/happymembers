@@ -308,7 +308,6 @@ foreach ($orderDataFromWp as $orderDataFromWpIndex => &$orderDataFromWpValue) {
             $orderDataFromWpValue->product_name = $title;
         }
     }
-
     // 氏名
     $orderDataFromWpValue->mbr_nm = '';
     // ﾌﾘｶﾞﾅ

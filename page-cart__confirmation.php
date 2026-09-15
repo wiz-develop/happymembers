@@ -41,8 +41,9 @@ global $MEM_COMBINE_STATUS_HPA_EXA;
 global $MEM_COMBINE_STATUS_HPA_EXD;
 
 $user = get_member_info();
+console_log($user);
 ?>
-<script src="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/order.js?ver=20231004"></script>
+<script src="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/order.js"></script>
 
 <!-- <script src="<?php // echo get_stylesheet_directory_uri();?>/assets/js/order-total.js"></script> -->
 <div id="page-product" class="page-cart__confirmation" data-mbr-type="<?php echo $mbr_type; ?>" data-mbr_combine_status="<?php echo $user['mbr_combine_stat']; ?>">

@@ -76,9 +76,6 @@ if (isset($_SESSION['user']['mbr_combine_stat'])) {
                                     } elseif ($_SESSION['user']['ex']['mbr_stat'] === $MEM_STATUS_DORMANT) {
                                         $status = '休眠中';
                                     }
-                                    if ($_SESSION['user']['ex']['mbr_id'] < $MEM_ID_EXCELLENT) {
-                                        echo '<span>マイル：'.$_SESSION['user']['ex']['new_m_point'].'</span>';
-                                    }
                                     echo '<span>ステイタス：'.$status.'</span>';
                                 } ?>
                                 </div>

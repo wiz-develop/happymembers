@@ -2,7 +2,7 @@
 /* Slider */
 .slick-loading .slick-list
 {
-    background: #fff url('/happymembers/cms/wp-content/themes/happy-members/assets/images/common/ajax-loader.gif') center center no-repeat;
+    background: #fff url('/cms/wp-content/themes/happy-members/assets/images/common/ajax-loader.gif') center center no-repeat;
 }
 
 /* Icons */
@@ -12,8 +12,8 @@
     font-weight: normal;
     font-style: normal;
 
-    src: url('/happymembers/cms/wp-content/themes/happy-members/assets/fonts/slick.eot');
-    src: url('/happymembers/cms/wp-content/themes/happy-members/assets/fonts/slick.eot?#iefix') format('embedded-opentype'), url('/happymembers/cms/wp-content/themes/happy-members/assets/fonts/slick.woff') format('woff'), url('/happymembers/cms/wp-content/themes/happy-members/assets/fonts/slick.ttf') format('truetype'), url('/happymembers/cms/wp-content/themes/happy-members/assets/fonts/slick.svg#slick') format('svg');
+    src: url('/cms/wp-content/themes/happy-members/assets/fonts/slick.eot');
+    src: url('/cms/wp-content/themes/happy-members/assets/fonts/slick.eot?#iefix') format('embedded-opentype'), url('/cms/wp-content/themes/happy-members/assets/fonts/slick.woff') format('woff'), url('/cms/wp-content/themes/happy-members/assets/fonts/slick.ttf') format('truetype'), url('/cms/wp-content/themes/happy-members/assets/fonts/slick.svg#slick') format('svg');
 }
 /* Arrows */
 .slick-prev,

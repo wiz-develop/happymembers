@@ -110,7 +110,7 @@ if (isset($_GET['br_stat'])) {
                                     <td>
                                         <?php
                                         if ($autoship_detail["hiki_ym"]) {
-                                            echo substr($autoship_detail["hiki_ym"], 0, 4).'年'.substr($autoship_detail["hiki_ym"], 4, 6).'月';
+                                            echo substr($autoship_detail["hiki_ym"], 0, 4).'年'.substr($autoship_detail["hiki_ym"], 5, 6).'月';
                                         } else {
                                             echo '-';
                                         }

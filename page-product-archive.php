@@ -15,7 +15,7 @@
  * @since Twenty Twenty 1.0
 */
 // require_once("cms/wp-content/themes/happy-members/functions.php");
-get_header();?>
+get_header(); ?>
 
 <?php
 // 購入履歴一覧から商品を取得

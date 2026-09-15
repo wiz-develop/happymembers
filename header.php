@@ -53,8 +53,8 @@ if (isset($_SESSION['user']['mbr_combine_stat'])) {
         <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
         <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/css/slick.css" media="all" />
         <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/css/slick-theme.css" media="all" />
-        <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/css/style.css?ver=20231004" media="all" />
-        <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/common.js" media="all" />
+        <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/css/style.css?<?php // echo date("ymdHis", filemtime(get_stylesheet_directory_uri()."/assets/css/style.css"));?>" media="all" />
+        <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/common.js?<?php // echo date("ymdHis", filemtime(get_stylesheet_directory_uri()."/assets/js/common.js"));?>" media="all" />
         <link rel="profile" href="https://gmpg.org/xfn/11">
         <link rel="shortcut icon" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/common/favicon.ico">
         <link rel="apple-touch-icon" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/common/apple-touch-icon.png">

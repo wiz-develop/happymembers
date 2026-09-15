@@ -52,12 +52,12 @@ require("assets/api/v1/common/autoload.php");
          *
          * @return string|array
          */
-        // var_dump(tryCatch('API_GetSystem', [], false));
+        var_dump(tryCatch('API_GetSystem', [], false));
     ?>
     <?php the_content(); ?>
 </div>
 
-<?php get_template_part('template-parts/footer-menus-widgets'); ?>
+<?php get_template_part( 'template-parts/footer-menus-widgets' ); ?>
 
 <?php
 get_footer();
