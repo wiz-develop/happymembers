@@ -34,7 +34,8 @@ async function submitOrderRequest(page, token, nonce) {
       security: orderNonce,
     });
 
-    const response = await fetch(window.ajaxUrl, {
+    const ajaxEndpoint = new URL('/cms/wp-admin/admin-ajax.php', window.location.origin);
+    const response = await fetch(ajaxEndpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
@@ -99,6 +100,11 @@ test('有効注文の直後に別画面から送信しても空注文を作成�
   expect(firstNonce).toBeTruthy();
   expect(secondToken).toBeTruthy();
   expect(secondNonce).toBeTruthy();
+
+  // APIの接続先と拒否応答を、副作用のない無効トークンで先に確認する。
+  const rejectedInvalidToken = await submitOrderRequest(firstPage, 'invalid-e2e-token', firstNonce);
+  expect(rejectedInvalidToken.status).toBe(409);
+  expect(rejectedInvalidToken.body.code).toBe(3);
 
   // 1回目だけが成立する。
   const accepted = await submitOrderRequest(firstPage, firstToken, firstNonce);
