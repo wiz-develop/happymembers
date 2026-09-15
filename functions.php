@@ -1435,6 +1435,26 @@ function send_order_confirmation_mail()
     global $DELIVERY_ADDRESS_KE;
     global $DELIVERY_ADDRESS_RE;
 
+    if (!is_user_logged_in()) {
+        wp_send_json(['code' => 4, 'message' => 'ログイン状態を確認できません。再度ログインしてください。'], 401);
+    }
+
+    if (!check_ajax_referer('send_order_confirmation_mail', 'security', false)) {
+        wp_send_json(['code' => 4, 'message' => '画面の有効期限が切れています。カートからやり直してください。'], 403);
+    }
+
+    $order_request_token = isset($_POST['order_token']) ? sanitize_text_field(wp_unslash($_POST['order_token'])) : '';
+    $valid_order_tokens = isset($_SESSION['order_request_tokens']) && is_array($_SESSION['order_request_tokens'])
+        ? $_SESSION['order_request_tokens']
+        : [];
+
+    if ($order_request_token === '' || !isset($valid_order_tokens[$order_request_token])) {
+        wp_send_json(['code' => 3, 'message' => 'この注文はすでに処理されたか、画面の有効期限が切れています。'], 409);
+    }
+
+    // PHPセッションのロック中にトークンを消費し、同じリクエストの再実行を防ぐ。
+    unset($_SESSION['order_request_tokens'][$order_request_token]);
+
     // user情報
     $user = get_member_info();
     $user_id = $user['id'];
@@ -1444,41 +1464,78 @@ function send_order_confirmation_mail()
     $user_syodlv_tel = $user['syodlv_tel'];
 
     // 入力情報
-    $delivery_request_time  = str_replace(" ", "", $_POST['delivery_request_time']);
-    $use_point = $_POST['use_point'];
+    $delivery_request_time = isset($_POST['delivery_request_time'])
+        ? str_replace(' ', '', sanitize_text_field(wp_unslash($_POST['delivery_request_time'])))
+        : '';
+    $use_point = isset($_POST['use_point']) ? intval($_POST['use_point']) : 0;
     if (!$use_point) {
         $use_point = 0;
     }
-    if ($_POST['delivery_address']) {
-        $delivery_address = $_POST['delivery_address'];
+    if (isset($_POST['delivery_address']) && $_POST['delivery_address'] !== '') {
+        $delivery_address = intval($_POST['delivery_address']);
     } else {
         $delivery_address = $user_syodlv;
     }
     // $fee = intval(str_replace('¥', '', $_POST['fee']));
 
+    // カート行をロックし、別タブ・別端末から同時に確定されても片方だけを処理する。
+    $wpdb->query('START TRANSACTION');
+
+    $abort_order = function ($message, $status = 500) use ($wpdb) {
+        $database_error = $wpdb->last_error;
+        $wpdb->query('ROLLBACK');
+        if ($database_error) {
+            error_log('Order transaction failed: '.$database_error);
+        }
+        wp_send_json(['code' => 5, 'message' => $message], $status);
+    };
+
     // 購入商品文字列・カートから削除するid・購入商品金額を取得
-    $cart_list = fetch_cart_list_by_user_id();
+    $cart_sql = $wpdb->prepare(
+        "SELECT * FROM carts WHERE user_id = %d ORDER BY CAST(`product_code` AS SIGNED) FOR UPDATE",
+        $user_id
+    );
+    $cart_list = $wpdb->get_results($cart_sql);
+    if ($cart_list === null && $wpdb->last_error) {
+        $abort_order('注文情報を確認できませんでした。時間をおいてカートからやり直してください。');
+    }
+    if (empty($cart_list)) {
+        $wpdb->query('ROLLBACK');
+        wp_send_json(['code' => 2, 'message' => 'カートに商品がありません。注文は送信されませんでした。'], 409);
+    }
     $order_product_list = [];  // メールに記述する購入商品
+    $order_items = [];         // 検証済みの購入商品
     $cart_ids = [];            // 購入後削除するid
     $sum_total_arr = [];       // 購入する商品
 
     foreach ($cart_list as $cart) {
-        $cart_id = $cart->id;
-        $quantity = $cart->quantity;
-        $code = $cart->product_code;
+        $cart_id = intval($cart->id);
+        $quantity = intval($cart->quantity);
+        $code = (string) $cart->product_code;
 
-        $price = $_SESSION['product'][$code]; // セッション(商品コードごとに)取得した金額が入っている
+        $product_detail = show_product($code);
+        if (intval($product_detail['post_id'] ?? 0) === 0 || $quantity <= 0 || !isset($_SESSION['product'][$code])) {
+            continue;
+        }
+
+        $price = intval($_SESSION['product'][$code]); // セッション(商品コードごとに)取得した金額が入っている
         $sub_total = intval($price * $quantity);
         $purchase_price_str = number_format($price);
         $sub_total_str = number_format($sub_total);
-        if ($product_detail['post_id'] === 0) continue;
-        $product_detail = show_product($code);
         $product_name = htmlspecialchars_decode($product_detail['title']);
         $cart_product = "<tr>\n<td style='text-align:right;padding-right:8px'>{$code}</td><td>{$product_name}</td><td style='text-align:right;padding-right:8px'>{$purchase_price_str}円</td><td style='text-align:right;padding-right:8px'>{$quantity}</td><td style='text-align:right;padding-right:8px'>{$sub_total_str}円</td></tr>\n";
 
         array_push($sum_total_arr, $sub_total);
         array_push($order_product_list, $cart_product);
+        $order_items[] = [
+            'cart' => $cart,
+            'product' => $product_detail,
+        ];
         array_push($cart_ids, $cart_id);
+    }
+    if (empty($order_product_list) || empty($order_items) || empty($cart_ids)) {
+        $wpdb->query('ROLLBACK');
+        wp_send_json(['code' => 2, 'message' => '注文可能な商品がありません。注文は送信されませんでした。'], 409);
     }
     // 商品合計 sum_total / 割引後価格 discount_price
     $sum_total = array_sum($sum_total_arr);
@@ -1565,15 +1622,21 @@ function send_order_confirmation_mail()
         'syodlv' => $delivery_address,
         'created_at' => $created_at,
         ];
-    $wpdb->insert('orders', $data);
-    $order_id = $wpdb->insert_id;
+    if ($wpdb->insert('orders', $data) === false) {
+        $abort_order('注文を保存できませんでした。注文は送信されていません。');
+    }
+    $order_id = intval($wpdb->insert_id);
+    if ($order_id <= 0) {
+        $abort_order('注文番号を発行できませんでした。注文は送信されていません。');
+    }
 
     // order_productテーブルへ保存
     $placeholders = [];
     $args = [];
-    foreach ($cart_list as $cart) {
+    foreach ($order_items as $order_item) {
+        $cart = $order_item['cart'];
+        $product = $order_item['product'];
         $product_code = (string) $cart->product_code;
-        $product = show_product($product_code);
         $regular_price = intval(str_replace(',', '', $product['regular_price']));
         $quantity = intval($cart->quantity);
         $purchase_price = intval(isset($_SESSION['product'][$product_code]) ? $_SESSION['product'][$product_code] : 0);
@@ -1602,13 +1665,18 @@ function send_order_confirmation_mail()
         $prepare_args = array_merge([$sql], $args);
         // call prepare with dynamic args
         $prepared = call_user_func_array([$wpdb, 'prepare'], $prepare_args);
-        $wpdb->query($prepared);
+        if ($wpdb->query($prepared) === false) {
+            $abort_order('注文明細を保存できませんでした。注文は送信されていません。');
+        }
     }
 
     // milesテーブルを更新
     if ($use_point) {
         // $remain_mile =  $user['ex']['new_m_point'] - $use_point;
-        $res_mile = $wpdb->get_results("SELECT * FROM miles WHERE user_id = $user_id");
+        $res_mile = $wpdb->get_results($wpdb->prepare("SELECT * FROM miles WHERE user_id = %d FOR UPDATE", $user_id));
+        if ($res_mile === null && $wpdb->last_error) {
+            $abort_order('マイル情報を確認できませんでした。注文は送信されていません。');
+        }
 
         if ($res_mile) {
             $mile_id = $res_mile[0] -> id;
@@ -1620,7 +1688,9 @@ function send_order_confirmation_mail()
                 'updated_at' => date_i18n('Y-m-d H:i:s'),
                 ];
             $id = ['id' => (int)$mile_id];
-            $wpdb->update('miles', $data, $id);
+            if ($wpdb->update('miles', $data, $id) === false) {
+                $abort_order('マイル情報を更新できませんでした。注文は送信されていません。');
+            }
         }
 
         if (!$res_mile) {
@@ -1629,8 +1699,10 @@ function send_order_confirmation_mail()
                 'use_mile_total' => $use_point,
                 'created_at' => date_i18n('Y-m-d H:i:s'),
                 ];
-            $wpdb->insert('miles', $data);
-            $mile_id = $wpdb->insert_id;
+            if ($wpdb->insert('miles', $data) === false) {
+                $abort_order('マイル情報を保存できませんでした。注文は送信されていません。');
+            }
+            $mile_id = intval($wpdb->insert_id);
 
             $new_use_mile_total = $use_point;
         }
@@ -1641,14 +1713,28 @@ function send_order_confirmation_mail()
             'use_mile_total_history' => $new_use_mile_total,
             'created_at' => date_i18n('Y-m-d H:i:s'),
             ];
-        $wpdb->insert('mile_histories', $data);
+        if ($wpdb->insert('mile_histories', $data) === false) {
+            $abort_order('マイル履歴を保存できませんでした。注文は送信されていません。');
+        }
     }
 
 
 
     // cartテーブルの購入済みの商品を削除
-    $delete = implode(",", $cart_ids);
-    $wpdb->query("DELETE FROM carts WHERE id in (". $delete .") ");
+    if (!empty($cart_ids)) {
+        $delete_placeholders = implode(',', array_fill(0, count($cart_ids), '%d'));
+        $delete_sql = "DELETE FROM carts WHERE user_id = %d AND id IN ({$delete_placeholders})";
+        $delete_args = array_merge([$delete_sql, $user_id], array_map('intval', $cart_ids));
+        $prepared_delete = call_user_func_array([$wpdb, 'prepare'], $delete_args);
+        $deleted_count = $wpdb->query($prepared_delete);
+        if ($deleted_count === false || intval($deleted_count) !== count($cart_ids)) {
+            $abort_order('カートの確定処理に失敗しました。注文は送信されていません。');
+        }
+    }
+
+    if ($wpdb->query('COMMIT') === false) {
+        $abort_order('注文を確定できませんでした。注文は送信されていません。');
+    }
 
     // メール本文作成
     $email_content['happy_id'] = '-';
