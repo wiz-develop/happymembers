@@ -60,29 +60,30 @@ test('有効注文の直後に別画面から送信しても空注文を作成�
   await firstPage.waitForLoadState('domcontentloaded');
   await expect(firstPage).not.toHaveURL(/\/login\/?$/);
 
-  // 専用アカウントの既存カートを勝手に削除しない。空でなければテストを停止する。
+  // 既存カートを削除・変更しない。商品がなければ購入可能な商品を1点だけ追加する。
   await firstPage.goto('/cart/');
-  await expect(firstPage.locator('.article-cart')).toHaveCount(0);
+  const existingCartCount = await firstPage.locator('.article-cart').count();
 
-  // 商品一覧の指定商品を1点だけカートへ追加する。
-  await firstPage.goto('/product/');
-  const requestedProductCode = process.env.E2E_PRODUCT_CODE;
-  if (requestedProductCode) {
-    expect(requestedProductCode).toMatch(/^[0-9A-Za-z_-]+$/);
+  if (existingCartCount === 0) {
+    await firstPage.goto('/product/');
+    const requestedProductCode = process.env.E2E_PRODUCT_CODE;
+    if (requestedProductCode) {
+      expect(requestedProductCode).toMatch(/^[0-9A-Za-z_-]+$/);
+    }
+    const purchase = requestedProductCode
+      ? firstPage.locator(`.product-purchase[data-product-code="${requestedProductCode}"]`).first()
+      : firstPage.locator('.product-purchase').filter({ has: firstPage.locator('.btn-add-cart') }).first();
+    await expect(purchase).toBeVisible();
+    const selectedProductCode = await purchase.getAttribute('data-product-code');
+    expect(selectedProductCode).toBeTruthy();
+    await purchase.locator('.btn-up').click();
+    const addResponsePromise = firstPage.waitForResponse((response) => (
+      response.url().includes('admin-ajax.php') && response.request().postData()?.includes('create_or_update_cart')
+    ));
+    await purchase.locator('.btn-add-cart').click();
+    const addResponse = await addResponsePromise;
+    expect(addResponse.ok()).toBeTruthy();
   }
-  const purchase = requestedProductCode
-    ? firstPage.locator(`.product-purchase[data-product-code="${requestedProductCode}"]`).first()
-    : firstPage.locator('.product-purchase').filter({ has: firstPage.locator('.btn-add-cart') }).first();
-  await expect(purchase).toBeVisible();
-  const selectedProductCode = await purchase.getAttribute('data-product-code');
-  expect(selectedProductCode).toBeTruthy();
-  await purchase.locator('.btn-up').click();
-  const addResponsePromise = firstPage.waitForResponse((response) => (
-    response.url().includes('admin-ajax.php') && response.request().postData()?.includes('create_or_update_cart')
-  ));
-  await purchase.locator('.btn-add-cart').click();
-  const addResponse = await addResponsePromise;
-  expect(addResponse.ok()).toBeTruthy();
 
   // 同じセッションで注文確認画面を2つ開き、それぞれ別の一回限りトークンを発行する。
   await firstPage.goto('/cart/confirmation/');
