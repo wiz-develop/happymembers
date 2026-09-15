@@ -1,0 +1,8 @@
+.DS_Store
+
+# Production-only credentials and environment settings
+assets/api/v1/common/config.php
+
+# Runtime and generated files
+*.log
+node_modules/
