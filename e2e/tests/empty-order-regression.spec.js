@@ -3,7 +3,6 @@ const { test, expect } = require('@playwright/test');
 const requiredEnvironment = [
   'E2E_LOGIN_ID',
   'E2E_PASSWORD',
-  'E2E_PRODUCT_CODE',
 ];
 
 function missingEnvironmentVariables() {
@@ -51,8 +50,6 @@ async function submitOrderRequest(page, token, nonce) {
 
 test('有効注文の直後に別画面から送信しても空注文を作成しない', async ({ browser, baseURL }) => {
   expect(new URL(baseURL).hostname).toBe('happyfamily-members.3d-showcase.net');
-  expect(process.env.E2E_PRODUCT_CODE).toMatch(/^[0-9A-Za-z_-]+$/);
-
   const context = await browser.newContext();
   const firstPage = await context.newPage();
 
@@ -69,10 +66,16 @@ test('有効注文の直後に別画面から送信しても空注文を作成�
 
   // 商品一覧の指定商品を1点だけカートへ追加する。
   await firstPage.goto('/product/');
-  const purchase = firstPage.locator(
-    `.product-purchase[data-product-code="${process.env.E2E_PRODUCT_CODE}"]`
-  ).first();
+  const requestedProductCode = process.env.E2E_PRODUCT_CODE;
+  if (requestedProductCode) {
+    expect(requestedProductCode).toMatch(/^[0-9A-Za-z_-]+$/);
+  }
+  const purchase = requestedProductCode
+    ? firstPage.locator(`.product-purchase[data-product-code="${requestedProductCode}"]`).first()
+    : firstPage.locator('.product-purchase').filter({ has: firstPage.locator('.btn-add-cart') }).first();
   await expect(purchase).toBeVisible();
+  const selectedProductCode = await purchase.getAttribute('data-product-code');
+  expect(selectedProductCode).toBeTruthy();
   await purchase.locator('.btn-up').click();
   const addResponsePromise = firstPage.waitForResponse((response) => (
     response.url().includes('admin-ajax.php') && response.request().postData()?.includes('create_or_update_cart')

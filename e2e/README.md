@@ -24,9 +24,10 @@ npx playwright install chromium
 export E2E_BASE_URL='http://happyfamily-members.3d-showcase.net'
 export E2E_LOGIN_ID='専用テスト会員のログインID'
 export E2E_PASSWORD='専用テスト会員のパスワード'
-export E2E_PRODUCT_CODE='注文に使用するテスト商品コード'
 export E2E_ALLOW_ORDER_CREATION='yes-test-environment-only'
 ```
+
+商品コードを指定する場合だけ `E2E_PRODUCT_CODE` を設定する。未指定の場合は、商品一覧の先頭にある購入可能な商品を1点使用する。
 
 `e2e/.env` を使用する場合は、上記の `export` 行を保存し、実行前に読み込む。
 
