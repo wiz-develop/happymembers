@@ -6,3 +6,6 @@ assets/api/v1/common/config.php
 # Runtime and generated files
 *.log
 node_modules/
+e2e/.env
+e2e/playwright-report/
+e2e/test-results/
