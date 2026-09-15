@@ -5,7 +5,7 @@
 /*  ロードイベント
 /*-------------------------------------------*/
 jQuery(function($){
-    isClicked = false;
+    let isOrderSubmitting = false;
     // usePoint = 0;
     // calculateSumTotal(usePoint);
 
@@ -13,7 +13,6 @@ jQuery(function($){
     // mPoint = $('#for-mile-discount').data('m-point');
     mPoint = $('#use-mile_point').data('new_m_point');
     famProdTotal = $('#for-mile-discount').data('fam-prod');
-    mbrType = $('#page-product').data('mbr-type');
     mbrCombineStatus = $('#page-product').data('mbr_combine_status');
     var deliveryAddress = $('#change_delivery-address').find('[name=address]').val();
 
@@ -211,10 +210,20 @@ jQuery(function($){
     $('.order_completion').on('click', function(event) {
 
         // 二重クリック防止
-        if (isClicked) {
+        if (isOrderSubmitting) {
             return;
         }
-        isClicked = true;
+        isOrderSubmitting = true;
+
+        const orderButtons = $('.order_completion');
+        const originalButtonText = orderButtons.first().text().trim();
+        const orderToken = $('#page-product').data('order-token');
+        const orderNonce = $('#page-product').data('order-nonce');
+        orderButtons
+            .addClass('order-procedure_off')
+            .removeClass('order-procedure')
+            .text('注文処理中...');
+        $('.order-submit-error').remove();
 
         deliveryRequestTime = $('#delivery-request').find('.change__detail').text();
         usePoint = input.val();
@@ -227,15 +236,25 @@ jQuery(function($){
                 'delivery_request_time' : deliveryRequestTime,
                 'use_point' : usePoint,
                 'delivery_address' : deliveryAddress,
+                'order_token' : orderToken,
+                'security' : orderNonce,
             },
             dataType : "json",
         }).done(function(data) {
-            if (data.code === 1) {
-                // TODO: 購入できませんでした。もう一度やり直してください。
+            if (data.code !== 0) {
+                orderButtons.first().before(
+                    $('<div class="order-submit-error error-message"></div>').text(data.message || '注文を処理できませんでした。カートからやり直してください。')
+                );
+                orderButtons.text(originalButtonText);
+                return;
             }
-            isClick = false;
             window.location.href = homeUrl+"/cart/completion";
         }).fail(function (XMLHttpRequest, textStatus, errorThrown) {
+            const response = XMLHttpRequest.responseJSON || {};
+            orderButtons.first().before(
+                $('<div class="order-submit-error error-message"></div>').text(response.message || '通信状況を確認できません。重複注文を防ぐため、カートから注文状況をご確認ください。')
+            );
+            orderButtons.text(originalButtonText);
             console.log("function       : send_order_confirmation_mail");
             console.log("XMLHttpRequest : " + XMLHttpRequest.status);
             console.log("textStatus     : " + textStatus);

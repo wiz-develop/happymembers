@@ -14,6 +14,8 @@
  * @subpackage Twenty_Twenty
  * @since Twenty Twenty 1.0
 */
+session_check();
+
 // 商品が空の場合商品一覧へリダイレクトをする。
 $cart_product_list = delete_not_purchase_cart_product();
 
@@ -28,12 +30,26 @@ if ($cart_product_list) {
 }
 
 if (!$cart_product_list) {
-    wp_redirect(get_home_url().'/product');
+    wp_safe_redirect(get_home_url().'/product');
+    exit;
 }
 
-get_header();
+// 注文確認画面ごとに一意のトークンを発行する。
+// 複数タブは許容しつつ、同じ画面からの再送はサーバー側で拒否する。
+if (!isset($_SESSION['order_request_tokens']) || !is_array($_SESSION['order_request_tokens'])) {
+    $_SESSION['order_request_tokens'] = [];
+}
+$token_expiration = time() - (30 * MINUTE_IN_SECONDS);
+foreach ($_SESSION['order_request_tokens'] as $token => $issued_at) {
+    if (intval($issued_at) < $token_expiration) {
+        unset($_SESSION['order_request_tokens'][$token]);
+    }
+}
+$order_request_token = wp_generate_uuid4();
+$_SESSION['order_request_tokens'][$order_request_token] = time();
+$order_request_nonce = wp_create_nonce('send_order_confirmation_mail');
 
-session_check();
+get_header();
 global $MEM_COMBINE_STATUS_HPA;
 global $MEM_COMBINE_STATUS_EXA;
 global $MEM_COMBINE_STATUS_EXD;
@@ -42,10 +58,10 @@ global $MEM_COMBINE_STATUS_HPA_EXD;
 
 $user = get_member_info();
 ?>
-<script src="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/order.js?ver=20231004"></script>
+<script src="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/order.js?ver=20260915"></script>
 
 <!-- <script src="<?php // echo get_stylesheet_directory_uri();?>/assets/js/order-total.js"></script> -->
-<div id="page-product" class="page-cart__confirmation" data-mbr-type="<?php echo $mbr_type; ?>" data-mbr_combine_status="<?php echo $user['mbr_combine_stat']; ?>">
+<div id="page-product" class="page-cart__confirmation" data-mbr_combine_status="<?php echo esc_attr($user['mbr_combine_stat']); ?>" data-order-token="<?php echo esc_attr($order_request_token); ?>" data-order-nonce="<?php echo esc_attr($order_request_nonce); ?>">
     <div class="mod-header">
         <div class="content">
             <div class="page-title">
